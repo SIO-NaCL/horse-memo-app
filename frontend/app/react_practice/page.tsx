@@ -1,83 +1,71 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-type Values = { name: string; email: string; note: string };
-type Errors = Partial<Record<keyof Values, string>>;
+type Item = { id: string; label: string; content: string };
+
+const items: Item[] = [
+  { id: "home", label: "Home", content: "ここはHomeです" },
+  { id: "about", label: "About", content: "ここはAboutです" },
+  { id: "settings", label: "Settings", content: "ここはSettingsです" },
+  { id: "settings2", label: "Settings2", content: "ここはSettings2です" },
+];
 
 export default function Page() {
-  const [v, setV] = useState<Values>({ name: "", email: "", note: "" });
-  const [submitted, setSubmitted] = useState(false);
+  return <TwoColumnLayout items={items} />;
+}
 
-  const errors: Errors = useMemo(() => {
-    const e: Errors = {};
-    if (!v.name.trim()) e.name = "名前は必須です";
-    if (!v.email.trim()) e.email = "メールは必須です";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) e.email = "メール形式が不正です";
-    if (v.note.trim().length < 10) e.note = "メモは10文字以上で入力してください";
-    return e;
-  }, [v]);
+function TwoColumnLayout({ items }: { items: Item[] }) {
+  const [selectedId, setSelectedId] = useState(items[0]?.id ?? "");
 
-  const isValid = Object.keys(errors).length === 0;
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    if (!isValid) return;
-    alert("送信OK: " + JSON.stringify(v, null, 2));
-  };
-
-  const showError = (key: keyof Values) => submitted && errors[key];
+  const selected = items.find((x) => x.id === selectedId) ?? items[0];
 
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui", maxWidth: 520 }}>
-      <h1>必須チェック付きフォーム（最小）</h1>
+    <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", height: "100vh" }}>
+      <Sidebar items={items} selectedId={selectedId} onSelect={setSelectedId} />
+      <Main item={selected} />
+    </div>
+  );
+}
 
-      
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-        <div>
-          <label>
-            名前（必須）
-            <input
-              value={v.name}
-              onChange={(e) => setV({ ...v, name: e.target.value })}
-              style={{ display: "block", width: "100%", padding: 8 }}
-            />
-          </label>
-          {showError("name") && <p style={{ color: "crimson", margin: "6px 0 0" }}>{errors.name}</p>}
-        </div>
+function Sidebar({
+  items,
+  selectedId,
+  onSelect,
+}: {
+  items: Item[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <aside style={{ borderRight: "1px solid #ccc", padding: 12 }}>
+      <h3>Menu</h3>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {items.map((it) => (
+          <li key={it.id}>
+            <button
+              onClick={() => onSelect(it.id)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "8px 10px",
+                marginBottom: 6,
+                fontWeight: it.id === selectedId ? 700 : 400,
+              }}
+            >
+              {it.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
 
-        <div>
-          <label>
-            メール（必須）
-            <input
-              value={v.email}
-              onChange={(e) => setV({ ...v, email: e.target.value })}
-              style={{ display: "block", width: "100%", padding: 8 }}
-            />
-          </label>
-          {showError("email") && <p style={{ color: "crimson", margin: "6px 0 0" }}>{errors.email}</p>}
-        </div>
-
-        <div>
-          <label>
-            メモ（10文字以上）
-            <textarea
-              value={v.note}
-              onChange={(e) => setV({ ...v, note: e.target.value })}
-              style={{ display: "block", width: "100%", padding: 8, minHeight: 90 }}
-            />
-          </label>
-          {showError("note") && <p style={{ color: "crimson", margin: "6px 0 0" }}>{errors.note}</p>}
-        </div>
-
-        <button type="submit" disabled={!isValid} style={{ padding: 10 }}>
-          送信
-        </button>
-
-        {!isValid && submitted && (
-          <p style={{ color: "#666" }}>未入力/不正な項目があります。赤いメッセージを確認してください。</p>
-        )}
-      </form>
+function Main({ item }: { item?: Item }) {
+  return (
+    <main style={{ padding: 16 }}>
+      <h1>{item?.label}</h1>
+      <p>{item?.content}</p>
     </main>
   );
 }

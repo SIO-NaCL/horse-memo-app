@@ -4,6 +4,7 @@
 	"name": "Node.js & TypeScript",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+	"workspaceFolder": "/workspaces/app/frontend",
 	"features": {
 		"ghcr.io/devcontainers-community/npm-features/prettier:1": {},
 		"ghcr.io/devcontainers-community/npm-features/typescript:1": {}

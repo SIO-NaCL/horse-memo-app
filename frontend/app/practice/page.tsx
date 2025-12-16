@@ -1,104 +1,132 @@
 "use client";
 
-import * as React from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  CircularProgress,
-  Alert,
-} from "@mui/material";
+import { useEffect, useState } from "react";
 
-type FetchState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "success"; httpStatus: number; data: unknown }
-  | { status: "error"; message: string; details?: unknown };
+type Horse = { id: number; name: string };
+type Note = {
+  id: number;
+  horse: number; // DRF側が "horse" で返す想定（horse_idじゃなく）
+  title: string;
+  body: string;
+  url: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// 配列 or ページネーション({results: [...]})の両方に対応
+function normalizeList<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+
+  if (typeof data === "object" && data !== null && "results" in data) {
+    const results = (data as { results?: unknown }).results;
+    if (Array.isArray(results)) return results as T[];
+  }
+
+  return [];
+}
 
 export default function PracticePage() {
-  const ENDPOINT = "/api/memo/notes/"; // ← あなたのDjango APIに合わせて変更
+  const [horses, setHorses] = useState<Horse[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [horseId, setHorseId] = useState<string>("1");
 
-  const [state, setState] = React.useState<FetchState>({ status: "idle" });
+  const [horsesStatus, setHorsesStatus] = useState<string>("idle");
+  const [notesStatus, setNotesStatus] = useState<string>("idle");
+  const [error, setError] = useState<string | null>(null);
 
-  const testFetch = async () => {
-    setState({ status: "loading" });
-
-    try {
-      const res = await fetch(ENDPOINT, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-
-      const contentType = res.headers.get("content-type") ?? "";
-      const body = contentType.includes("application/json")
-        ? await res.json()
-        : await res.text();
-
-      if (!res.ok) {
-        setState({
-          status: "error",
-          message: `HTTP ${res.status} ${res.statusText}`,
-          details: body,
-        });
-        return;
+  // 起動時にHorse一覧をGET
+  useEffect(() => {
+    (async () => {
+      try {
+        setError(null);
+        setHorsesStatus("loading...");
+        const res = await fetch("/api/memo/horses/");
+        if (!res.ok) {
+          throw new Error(`GET /api/horses/ failed: ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+        setHorses(normalizeList<Horse>(data));
+        setHorsesStatus("ok");
+      } catch (e) {
+        setHorsesStatus("error");
+        setError(e instanceof Error ? e.message : String(e));
       }
+    })();
+  }, []);
 
-      setState({ status: "success", httpStatus: res.status, data: body });
+  // ボタンでNote一覧をGET
+  const fetchNotes = async () => {
+    try {
+      setError(null);
+      setNotesStatus("loading...");
+      const res = await fetch(`/api/memo/notes/?horse=${encodeURIComponent(horseId)}`);
+      if (!res.ok) {
+        throw new Error(`GET /api/notes/?horse=... failed: ${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      setNotes(normalizeList<Note>(data));
+      setNotesStatus("ok");
     } catch (e) {
-      setState({
-         status: "error",
-         message: e instanceof Error ? e.message : "Fetch failed",
-         details: e,
-      });
+      setNotesStatus("error");
+      setError(e instanceof Error ? e.message : String(e));
     }
   };
 
   return (
-    <Box sx={{ p: 3, display: "grid", gap: 2 }}>
-      <Typography variant="h5" fontWeight={700}>
-        Practice: Django API 疎通テスト
-      </Typography>
+    <main style={{ padding: 16, fontFamily: "sans-serif" }}>
+      <h1>API疎通テスト（practice）</h1>
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          Endpoint: <b>{ENDPOINT}</b>
-        </Typography>
+      <section style={{ marginTop: 16 }}>
+        <h2>1) Horses: GET /api/horses/</h2>
+        <div>Status: {horsesStatus}</div>
+        <ul>
+          {horses.map((h) => (
+            <li key={h.id}>
+              {h.id}: {h.name}
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        <Button variant="contained" onClick={testFetch} disabled={state.status === "loading"}>
-          {state.status === "loading" ? "Fetching..." : "GET を叩く"}
-        </Button>
+      <section style={{ marginTop: 16 }}>
+        <h2>2) Notes: GET /api/notes/?horse=ID</h2>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label>
+            horseId:{" "}
+            <input
+              value={horseId}
+              onChange={(e) => setHorseId(e.target.value)}
+              style={{ width: 80 }}
+            />
+          </label>
+          <button onClick={fetchNotes}>Fetch Notes</button>
+          <span>Status: {notesStatus}</span>
+        </div>
 
-        <Box sx={{ mt: 2 }}>
-          {state.status === "loading" && <CircularProgress size={24} />}
+        <ol>
+          {notes.map((n) => (
+            <li key={n.id} style={{ marginTop: 8 }}>
+              <div>
+                <b>{n.title}</b>（id={n.id} / horse={n.horse}）
+              </div>
+              <div style={{ whiteSpace: "pre-wrap" }}>{n.body}</div>
+              <div>
+                url: {n.url ? <a href={n.url} target="_blank" rel="noreferrer">{n.url}</a> : "(none)"}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.7 }}>
+                created_at: {n.created_at} / updated_at: {n.updated_at}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-          {state.status === "error" && (
-            <Alert severity="error">
-              <div>{state.message}</div>
-              {state.details !== undefined && (
-                <pre style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>
-                  {typeof state.details === "string"
-                    ? state.details
-                    : JSON.stringify(state.details, null, 2)}
-                </pre>
-              )}
-            </Alert>
-          )}
-
-          {state.status === "success" && (
-            <Alert severity="success">
-              <div>OK! HTTP {state.httpStatus}</div>
-              <pre style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>
-                {JSON.stringify(state.data, null, 2)}
-              </pre>
-            </Alert>
-          )}
-
-          {state.status === "idle" && (
-            <Alert severity="info">ボタンを押すとAPIを叩いて結果を表示します。</Alert>
-          )}
-        </Box>
-      </Paper>
-    </Box>
+      {error && (
+        <section style={{ marginTop: 16, color: "crimson" }}>
+          <h2>Error</h2>
+          <pre style={{ whiteSpace: "pre-wrap" }}>{error}</pre>
+        </section>
+      )}
+    </main>
   );
 }
