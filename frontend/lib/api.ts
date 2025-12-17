@@ -85,3 +85,63 @@ export function normalizeList<T>(data: unknown): T[] {
   // どちらでもなければ「一覧として扱えない」ので空配列を返す
   return [];
 }
+
+
+/**
+ * DELETE共通関数
+ * - 成功時は204 No Contentが多いので、戻り値は void にするのが楽
+ */
+export async function apiDelete(path: string, signal?: AbortSignal): Promise<void> {
+  const res = await fetch(path, {
+    method: "DELETE",
+    cache: "no-store",
+    signal,
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const data = (await res.json()) as unknown;
+      detail = JSON.stringify(data);
+    } catch {
+      // 204などJSONがないケースは無視
+    }
+    throw new Error(
+      `DELETE ${path} failed: ${res.status} ${res.statusText}${detail ? ` ${detail}` : ""}`
+    );
+  }
+}
+
+/**
+ * PATCH共通関数（JSON送信）
+ * - path: 例 "/api/memo/notes/123/"
+ * - body: 例 { title: "...", body: "...", url: "..." }
+ */
+export async function apiPatch<TResponse, TBody extends object>(
+  path: string,
+  body: TBody,
+  signal?: AbortSignal
+): Promise<TResponse> {
+  const res = await fetch(path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    cache: "no-store",
+    signal,
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const data = (await res.json()) as unknown;
+      detail = JSON.stringify(data);
+    } catch {
+      // ignore
+    }
+    throw new Error(
+      `PATCH ${path} failed: ${res.status} ${res.statusText}${detail ? ` ${detail}` : ""}`
+    );
+  }
+
+  return (await res.json()) as TResponse;
+}

@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { Box, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography, IconButton } from "@mui/material";
+import { Box, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography, IconButton,Tooltip } from "@mui/material";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import DeleteIcon from "@mui/icons-material/Delete";
 import type { Note, SortKey, SortOrder } from "@/lib/types";
 
 export default function NotesTable(props: {
@@ -12,6 +13,8 @@ export default function NotesTable(props: {
   sortKey: SortKey;
   sortOrder: SortOrder;
   onSortChange: (key: SortKey, order: SortOrder) => void;
+  onDeleteNote: (noteId: number, noteTitle: string) => void;
+  onRowClick: (noteId: number) => void;
 }) {
   const { horseName, notes, sortKey, sortOrder, onSortChange } = props;
 
@@ -28,6 +31,7 @@ export default function NotesTable(props: {
               <TableCell>タイトル</TableCell>
               <TableCell>内容</TableCell>
               <TableCell>URL</TableCell>
+              {/* <TableCell align="right">操作</TableCell> */}
 
               <TableCell>
                 <SortHeader
@@ -53,7 +57,11 @@ export default function NotesTable(props: {
 
           <TableBody>
             {notes.map((note) => (
-              <TableRow key={note.id} hover>
+              <TableRow key={note.id} 
+              hover
+              onClick={() => props.onRowClick(note.id)}
+              sx={{ cursor: "pointer" }}
+              >
                 <TableCell sx={{ maxWidth: 200 }}>
                   <Typography noWrap>{note.title}</Typography>
                 </TableCell>
@@ -91,6 +99,22 @@ export default function NotesTable(props: {
                 <TableCell>
                   <Typography variant="caption">{new Date(note.updated_at).toLocaleString()}</Typography>
                 </TableCell>
+                
+                {/* Delete Button */}
+                <TableCell align="right">
+                  <Tooltip title="削除">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onDeleteNote(note.id, note.title);
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+                
               </TableRow>
             ))}
 
@@ -122,6 +146,7 @@ function SortHeader(props: {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
       {label}
+      {/*  Sort Button ▲▼*/}
       <IconButton size="small" onClick={onAsc}>
         <ArrowDropUpIcon fontSize="small" color={active && order === "asc" ? "primary" : "inherit"} />
       </IconButton>

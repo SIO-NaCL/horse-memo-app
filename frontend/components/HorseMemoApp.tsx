@@ -9,8 +9,9 @@ import NotesTable from "@/components/NotesTable";
 import NoteDialog from "@/components/NoteDialog";
 import Welcome from "@/components/Welcome";
 import HorseDialog from "@/components/HorseDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
-import { apiGet, apiPost,normalizeList } from "@/lib/api";
+import {  apiGet, apiPost, apiPatch, apiDelete, normalizeList } from "@/lib/api";
 import type { SortKey, SortOrder } from "@/lib/types";
 
 // APIレスポンスに合わせた型（Noteは horse: number を想定）
@@ -30,7 +31,7 @@ export default function HorseMemoApp(props: { selectedHorseId: number | null }) 
   const router = useRouter();
 
   // ---- UI state（ソート/ダイアログ） ----
-  const [sortKey, setSortKey] = useState<SortKey>("updated_at");
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -50,6 +51,11 @@ export default function HorseMemoApp(props: { selectedHorseId: number | null }) 
   const [isHorseDialogOpen, setIsHorseDialogOpen] = useState(false);
   const [newHorseName, setNewHorseName] = useState("");
 
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+
+  // 編集対象の Note ID
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+
   // 起動時に Horse 一覧取得
   const fetchHorses = async (signal?: AbortSignal) => {
       try {
@@ -65,6 +71,44 @@ export default function HorseMemoApp(props: { selectedHorseId: number | null }) 
         setHorsesError(e instanceof Error ? e.message : String(e));
       } finally {
         setHorsesLoading(false);
+      }
+    };
+
+    // Note再取得の関数
+    const fetchNotes = async (horseId: number, signal?: AbortSignal) => {
+      try {
+        setNotesLoading(true);
+        setNotesError(null);
+
+        const data = await apiGet<unknown>(
+          `/api/memo/notes/?horse=${encodeURIComponent(String(horseId))}`,
+          signal
+        );
+        setNotesRaw(normalizeList<Note>(data));
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError") return;
+        setNotesError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setNotesLoading(false);
+      }
+    };
+
+    // Note削除確定処理
+    const confirmDelete = async () => {
+      if (!deleteTarget) return;
+      if (!selectedHorseId) return;
+
+      try {
+        setNotesError(null);
+
+        await apiDelete(`/api/memo/notes/${deleteTarget.id}/`);
+
+        setDeleteTarget(null);
+
+        // 削除後に一覧再取得
+        await fetchNotes(selectedHorseId);
+      } catch (e) {
+        setNotesError(e instanceof Error ? e.message : String(e));
       }
     };
     
@@ -139,48 +183,54 @@ export default function HorseMemoApp(props: { selectedHorseId: number | null }) 
 
   const handleOpenDialog = () => {
     if (!selectedHorseId) return;
-    setIsDialogOpen(true);
+    setEditingNoteId(null); // ← 新規モード(新規で開く時は編集IDをリセット)
+    setIsDialogOpen(true); // 編集モード
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
+    setEditingNoteId(null);
     setNewTitle("");
     setNewBody("");
     setNewUrl("");
   };
 
   const handleSubmit = async () => {
-  if (!selectedHorseId) return;
+    if (!selectedHorseId) return;
 
-  try {
-    setNotesError(null);
+    try {
+      setNotesError(null);
 
-    // POST（新規Note作成）
-    await apiPost<
-      Note,
-      { horse: number; title: string; body: string; url: string }
-    >("/api/memo/notes/", {
-      horse: selectedHorseId,
-      title: newTitle,
-      body: newBody,
-      url: newUrl,
-    });
+      if (editingNoteId === null) {
+        // --- 新規作成（POST） ---
+        await apiPost<Note, { horse: number; title: string; body: string; url: string }>(
+          "/api/memo/notes/",
+          {
+            horse: selectedHorseId,
+            title: newTitle,
+            body: newBody,
+            url: newUrl,
+          }
+        );
+      } else {
+        // --- 編集（PATCH） ---
+        await apiPatch<Note, { title: string; body: string; url: string }>(
+          `/api/memo/notes/${editingNoteId}/`,
+          {
+            title: newTitle,
+            body: newBody,
+            url: newUrl,
+          }
+        );
+      }
 
-    // 成功したら Dialog を閉じる
-    handleCloseDialog();
-
-    // その後、一覧を再取得（確実）
-    setNotesLoading(true);
-    const data = await apiGet<unknown>(
-      `/api/memo/notes/?horse=${encodeURIComponent(String(selectedHorseId))}`
-    );
-    setNotesRaw(normalizeList<Note>(data));
-  } catch (e) {
-    setNotesError(e instanceof Error ? e.message : String(e));
-  } finally {
-    setNotesLoading(false);
-  }
-};
+      // 成功したら閉じて一覧更新
+      handleCloseDialog();
+      await fetchNotes(selectedHorseId);
+    } catch (e) {
+      setNotesError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
 const handleSubmitHorse = async () => {
   const name = newHorseName.trim();
@@ -273,9 +323,16 @@ const handleSubmitHorse = async () => {
                   notes={notes}
                   sortKey={sortKey}
                   sortOrder={sortOrder}
-                  onSortChange={(k, o) => {
-                    setSortKey(k);
-                    setSortOrder(o);
+                  onSortChange={(k, o) => {setSortKey(k); setSortOrder(o);}}
+                  onDeleteNote={(id, title) => setDeleteTarget({ id, title })}
+                  onRowClick={(noteId) => {
+                    const target = notesRaw.find((n) => n.id === noteId);
+                    if (!target) return;
+                    setEditingNoteId(target.id);
+                    setNewTitle(target.title);
+                    setNewBody(target.body);
+                    setNewUrl(target.url);
+                    setIsDialogOpen(true);
                   }}
                 />
               ) : (
@@ -290,6 +347,8 @@ const handleSubmitHorse = async () => {
 
       <NoteDialog
         open={isDialogOpen}
+        dialogTitle={editingNoteId === null ? "新規Note追加" : "Note編集"}
+        submitText={editingNoteId === null ? "追加" : "更新"}
         title={newTitle}
         body={newBody}
         url={newUrl}
@@ -315,6 +374,18 @@ const handleSubmitHorse = async () => {
         }}
         onSubmit={handleSubmitHorse}
       />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="メモを削除しますか？"
+        message={deleteTarget ? `「${deleteTarget.title}」を削除します。\nこの操作は元に戻せません。` : ""}
+        confirmText="削除"
+        cancelText="キャンセル"
+        isDanger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+
     </>
   );
 }

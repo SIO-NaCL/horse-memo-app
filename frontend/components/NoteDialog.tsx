@@ -18,18 +18,23 @@ export default function NoteDialog(props: {
   title: string;
   body: string;
   url: string;
+  dialogTitle: string;
+  submitText: string;
   onChangeTitle: (v: string) => void;
   onChangeBody: (v: string) => void;
   onChangeUrl: (v: string) => void;
   onClose: () => void;
   onSubmit: () => void;
   onClear: () => void;
+  
 }) {
   const {
     open,
     title,
     body,
     url,
+    dialogTitle,
+    submitText,
     onChangeTitle,
     onChangeBody,
     onChangeUrl,
@@ -41,7 +46,7 @@ export default function NoteDialog(props: {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        新規Note追加
+        {dialogTitle}
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -64,7 +69,7 @@ export default function NoteDialog(props: {
 
       <DialogActions>
         <Button onClick={onClear}>取り消し</Button>
-        <Button variant="contained" onClick={onSubmit} disabled={!title.trim()}>OK</Button>
+        <Button variant="contained" onClick={onSubmit} disabled={!title.trim()}>{submitText}</Button>
       </DialogActions>
     </Dialog>
   );
