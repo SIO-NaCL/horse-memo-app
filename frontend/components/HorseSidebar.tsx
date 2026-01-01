@@ -2,7 +2,16 @@
 
 // サイドバーのコンポーネント
 import React from "react";
-import { Box, List, ListItemButton, ListItemText, Typography, IconButton, Tooltip } from "@mui/material";
+import { 
+  Box, 
+  List, 
+  ListItemButton, 
+  ListItemText, 
+  Typography, 
+  IconButton, 
+  Tooltip,
+  Icon
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import type { Horse } from "@/lib/types";
 
@@ -29,15 +38,41 @@ export default function HorseSidebar(props: {
     >
       {/* 新規馬名追加ボタン */}
       <Box sx={{ position: "absolute", top: 8, left: 8, zIndex: 2 }}>
-      <Tooltip title="新しい馬を追加">
-      <IconButton
-        color="primary"
-        onClick={props.onAddHorse}
-        sx={{ bgcolor: "primary.main", color: "primary.contrastText", boxShadow: 2 }}
-      >
-        <AddIcon />
-      </IconButton>
-      </Tooltip>
+        <Tooltip title="新しい馬を追加">
+          <IconButton
+            color="primary"
+            onClick={props.onAddHorse}
+            sx={{
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              boxShadow: 2,
+              position: "relative", // ← 重ね配置の基準
+              overflow: "hidden",
+            }}
+          >
+            {/* 背面：半透明の chess_knight（Material Symbols） */}
+            <Icon
+              baseClassName="material-symbols-outlined"
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                placeItems: "center",
+                opacity: 0.40, // 半透明
+                fontSize: 36,
+                 transform: "translate(2px, 2px)",
+                // あなたのURLの指定（Outlined + FILL@0 wght@400 GRAD@0 opsz@24）
+                fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24',
+                pointerEvents: "none", // ← クリックを邪魔しない
+              }}
+            >
+              chess_knight
+            </Icon>
+
+            {/* 前面：通常の AddIcon */}
+            <AddIcon sx={{ position: "relative" }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* 新規Note追加ボタン */}
@@ -55,7 +90,8 @@ export default function HorseSidebar(props: {
                 boxShadow: 2,
               }}
             >
-              <AddIcon />
+              {/* <AddIcon /> */}
+              <Icon baseClassName="material-symbols-outlined">add_notes</Icon>
             </IconButton>
           </span>
         </Tooltip>

@@ -134,6 +134,7 @@ export default function NotesTable(props: {
   );
 }
 
+// ヘッダーのソートボタンコンポーネント
 function SortHeader(props: {
   label: string;
   active: boolean;

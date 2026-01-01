@@ -24,6 +24,7 @@ export default function NoteDialog(props: {
   onChangeBody: (v: string) => void;
   onChangeUrl: (v: string) => void;
   onClose: () => void;
+  onAfterClose?: () => void; // ←追加
   onSubmit: () => void;
   onClear: () => void;
   
@@ -39,12 +40,20 @@ export default function NoteDialog(props: {
     onChangeBody,
     onChangeUrl,
     onClose,
+    onAfterClose,
     onSubmit,
     onClear,
   } = props;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} 
+            onClose={onClose} 
+            fullWidth 
+            maxWidth="sm"
+            slotProps={{
+            transition: {onExited: () => {onAfterClose?.();},}
+            ,}}
+            >
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         {dialogTitle}
         <IconButton onClick={onClose} size="small">

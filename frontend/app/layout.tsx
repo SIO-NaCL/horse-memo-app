@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
+import "material-symbols/outlined.css";
 
 export const metadata: Metadata = {
   title: "Horse Notes",

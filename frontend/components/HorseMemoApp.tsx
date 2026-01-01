@@ -181,14 +181,19 @@ export default function HorseMemoApp(props: { selectedHorseId: number | null }) 
     router.push(`/${id}`);
   };
 
+  // Note追加ダイアログを開く
   const handleOpenDialog = () => {
     if (!selectedHorseId) return;
     setEditingNoteId(null); // ← 新規モード(新規で開く時は編集IDをリセット)
     setIsDialogOpen(true); // 編集モード
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
+  // Noteダイアログを閉じる
+  const requestCloseDialog = () => {
+  setIsDialogOpen(false); // ←閉じるだけ
+  };
+  // ダイアログ閉じた後に状態リセット
+  const resetDialogState = () => {
     setEditingNoteId(null);
     setNewTitle("");
     setNewBody("");
@@ -225,13 +230,16 @@ export default function HorseMemoApp(props: { selectedHorseId: number | null }) 
       }
 
       // 成功したら閉じて一覧更新
-      handleCloseDialog();
+      requestCloseDialog();
+      resetDialogState();
+      
+      // 一覧再取得
       await fetchNotes(selectedHorseId);
     } catch (e) {
       setNotesError(e instanceof Error ? e.message : String(e));
     }
   };
-
+// Horse追加処理
 const handleSubmitHorse = async () => {
   const name = newHorseName.trim();
   if (!name) return;
@@ -346,21 +354,22 @@ const handleSubmitHorse = async () => {
       </Box>
 
       <NoteDialog
-        open={isDialogOpen}
-        dialogTitle={editingNoteId === null ? "新規Note追加" : "Note編集"}
-        submitText={editingNoteId === null ? "追加" : "更新"}
-        title={newTitle}
-        body={newBody}
-        url={newUrl}
-        onChangeTitle={setNewTitle}
-        onChangeBody={setNewBody}
-        onChangeUrl={setNewUrl}
-        onClose={handleCloseDialog}
-        onSubmit={handleSubmit}
-        onClear={() => {
-          setNewTitle("");
-          setNewBody("");
-          setNewUrl("");
+      open={isDialogOpen}
+      dialogTitle={editingNoteId === null ? "新規Note追加" : "Note編集"}
+      submitText={editingNoteId === null ? "追加" : "更新"}
+      title={newTitle}
+      body={newBody}
+      url={newUrl}
+      onChangeTitle={setNewTitle}
+      onChangeBody={setNewBody}
+      onChangeUrl={setNewUrl}
+      onClose={requestCloseDialog}      // ←閉じるだけ
+      onAfterClose={resetDialogState}   // ←閉じ切ってからリセット
+      onSubmit={handleSubmit}
+      onClear={() => {
+        setNewTitle("");
+        setNewBody("");
+        setNewUrl("");
         }}
       />
 

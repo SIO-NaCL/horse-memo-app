@@ -1,132 +1,106 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { Box, Button, CssBaseline, Typography, Stack } from "@mui/material";
+import NoteDialog from "@/components/NoteDialog";
 
-type Horse = { id: number; name: string };
-type Note = {
-  id: number;
-  horse: number; // DRF側が "horse" で返す想定（horse_idじゃなく）
-  title: string;
-  body: string;
-  url: string;
-  created_at: string;
-  updated_at: string;
-};
-
-// 配列 or ページネーション({results: [...]})の両方に対応
-function normalizeList<T>(data: unknown): T[] {
-  if (Array.isArray(data)) return data as T[];
-
-  if (typeof data === "object" && data !== null && "results" in data) {
-    const results = (data as { results?: unknown }).results;
-    if (Array.isArray(results)) return results as T[];
-  }
-
-  return [];
-}
+/**
+ * practice/page.tsx
+ * NoteDialog が「親からどんな props を渡されて動くか」を確認するための最小サンプル。
+ *
+ * - 「新規メモを開く」ボタンで NoteDialog を開く（新規モード想定）
+ * - title/body/url は親（このページ）側の state として持ち、props で NoteDialog に渡す
+ * - onChangeTitle などで NoteDialog からの入力変更を親が受け取って state 更新する
+ * - onClose は「閉じるだけ」、onAfterClose で「閉じ切った後にリセット」（見た目チラつき防止）
+ */
 
 export default function PracticePage() {
-  const [horses, setHorses] = useState<Horse[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [horseId, setHorseId] = useState<string>("1");
+  // Dialog開閉
+  const [open, setOpen] = useState(false);
 
-  const [horsesStatus, setHorsesStatus] = useState<string>("idle");
-  const [notesStatus, setNotesStatus] = useState<string>("idle");
-  const [error, setError] = useState<string | null>(null);
+  // NoteDialog の入力値（親が持つ）
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [url, setUrl] = useState("");
 
-  // 起動時にHorse一覧をGET
-  useEffect(() => {
-    (async () => {
-      try {
-        setError(null);
-        setHorsesStatus("loading...");
-        const res = await fetch("/api/memo/horses/");
-        if (!res.ok) {
-          throw new Error(`GET /api/horses/ failed: ${res.status} ${res.statusText}`);
-        }
-        const data = await res.json();
-        setHorses(normalizeList<Horse>(data));
-        setHorsesStatus("ok");
-      } catch (e) {
-        setHorsesStatus("error");
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    })();
-  }, []);
+  // 「新規モード」で開く（入力欄は空にしてから開く）
+  const openNew = () => {
+    setTitle("");
+    setBody("");
+    setUrl("");
+    setOpen(true);
+  };
 
-  // ボタンでNote一覧をGET
-  const fetchNotes = async () => {
-    try {
-      setError(null);
-      setNotesStatus("loading...");
-      const res = await fetch(`/api/memo/notes/?horse=${encodeURIComponent(horseId)}`);
-      if (!res.ok) {
-        throw new Error(`GET /api/notes/?horse=... failed: ${res.status} ${res.statusText}`);
-      }
-      const data = await res.json();
-      setNotes(normalizeList<Note>(data));
-      setNotesStatus("ok");
-    } catch (e) {
-      setNotesStatus("error");
-      setError(e instanceof Error ? e.message : String(e));
-    }
+  // 「編集モード」で開く
+  const openEdit = () => {
+    setTitle("既存タイトル");
+    setBody("既存内容");
+    setUrl("https://example.com");
+    setOpen(true);
+  };
+
+  // Noteダイアログを閉じる
+  const requestCloseDialog = () => {
+  setOpen(false); // ←閉じるだけ
+  };
+  // ダイアログ閉じた後に状態リセット
+  const resetDialogState = () => {
+    setTitle("");
+    setBody("");
+    setUrl("");
+  };
+
+  // 送信（今回はDB連携しない。親が受け取れることだけ確認）
+  const submit = () => {
+    console.log("submit (practice)", { title, body, url });
+    setOpen(false);
   };
 
   return (
-    <main style={{ padding: 16, fontFamily: "sans-serif" }}>
-      <h1>API疎通テスト（practice）</h1>
+    <>
+      <CssBaseline />
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h5" sx={{ mb: 2 }}>
+          NoteDialog props 確認（practice）
+        </Typography>
 
-      <section style={{ marginTop: 16 }}>
-        <h2>1) Horses: GET /api/horses/</h2>
-        <div>Status: {horsesStatus}</div>
-        <ul>
-          {horses.map((h) => (
-            <li key={h.id}>
-              {h.id}: {h.name}
-            </li>
-          ))}
-        </ul>
-      </section>
+        <Stack direction="column" spacing={2} sx={{ mb: 2, maxWidth: 260 }}>
+          <Button variant="contained" onClick={openNew}>
+            新規モードを開く
+          </Button>
 
-      <section style={{ marginTop: 16 }}>
-        <h2>2) Notes: GET /api/notes/?horse=ID</h2>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <label>
-            horseId:{" "}
-            <input
-              value={horseId}
-              onChange={(e) => setHorseId(e.target.value)}
-              style={{ width: 80 }}
-            />
-          </label>
-          <button onClick={fetchNotes}>Fetch Notes</button>
-          <span>Status: {notesStatus}</span>
-        </div>
+          <Button variant="contained" onClick={openEdit}>
+            編集モードで開く
+          </Button>
+        </Stack>
 
-        <ol>
-          {notes.map((n) => (
-            <li key={n.id} style={{ marginTop: 8 }}>
-              <div>
-                <b>{n.title}</b>（id={n.id} / horse={n.horse}）
-              </div>
-              <div style={{ whiteSpace: "pre-wrap" }}>{n.body}</div>
-              <div>
-                url: {n.url ? <a href={n.url} target="_blank" rel="noreferrer">{n.url}</a> : "(none)"}
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                created_at: {n.created_at} / updated_at: {n.updated_at}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2">親が持っている state（確認用）</Typography>
+          <pre style={{ marginTop: 8, padding: 12, background: "#f5f5f5" }}>
+            {JSON.stringify({ open, title, body, url }, null, 2)}
+          </pre>
+        </Box>
 
-      {error && (
-        <section style={{ marginTop: 16, color: "crimson" }}>
-          <h2>Error</h2>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{error}</pre>
-        </section>
-      )}
-    </main>
+        <NoteDialog
+          open={open}
+          dialogTitle="新規Note追加（practice）"
+          submitText="追加"
+          title={title}
+          body={body}
+          url={url}
+          onChangeTitle={setTitle}
+          onChangeBody={setBody}
+          onChangeUrl={setUrl}
+          onClose={requestCloseDialog}
+          onAfterClose={resetDialogState}
+          onSubmit={submit}
+          onClear={() => {
+            setTitle("");
+            setBody("");
+            setUrl("");
+          }}
+        />
+      </Box>
+    </>
   );
 }
