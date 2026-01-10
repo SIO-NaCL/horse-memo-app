@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mysql:8
+    command:
+      - --collation-server=utf8mb4_0900_bin
+      - --transaction-isolation=READ-COMMITTED
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: race_memo
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: "Asia/Tokyo"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS}
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: race_memo
+      DB_USER: appuser
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: "Asia/Tokyo"
+    depends_on:
+      - db
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  frontend:
+    build: ./frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  db_data:

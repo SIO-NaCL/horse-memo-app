@@ -81,6 +81,10 @@ export default function PracticePage() {
           </pre>
         </Box>
 
+        <Box sx={{ p: 4, bgcolor: "red" }}>
+          Hello
+        </Box>
+
         <NoteDialog
           open={open}
           dialogTitle="新規Note追加（practice）"
