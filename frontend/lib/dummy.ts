@@ -9,7 +9,7 @@ export const DUMMY_HORSES: Horse[] = [
 export const DUMMY_NOTES: Note[] = [
   {
     id: 1,
-    horse_id: 1,
+    horse: 1,
     title: "東京2000強い",
     body: "上がり性能が高いので府中の長い直線が合う。",
     url: "",
@@ -18,7 +18,7 @@ export const DUMMY_NOTES: Note[] = [
   },
   {
     id: 2,
-    horse_id: 1,
+    horse: 1,
     title: "右回りは要確認",
     body: "右回りでのパフォーマンスは要チェック。",
     url: "https://example.com",
@@ -27,7 +27,7 @@ export const DUMMY_NOTES: Note[] = [
   },
   {
     id: 3,
-    horse_id: 2,
+    horse: 2,
     title: "気性面メモ",
     body: "パドックでの入れ込み具合を要観察。",
     url: "",

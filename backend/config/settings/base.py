@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # デバッグ用
 # DEBUG = True
 # ALLOWED_HOSTS = ['*']
-# SECRET_KEY = "django-insecure-!o06!g2jnryeo@g)0-)^w$$fotnb=hn3e!t)&-!2abx(l@d3&f"
+SECRET_KEY = "django-insecure-!o06!g2jnryeo@g)0-)^w$$fotnb=hn3e!t)&-!2abx(l@d3&f"
 
 # 本番用
 DEBUG = False
