@@ -61,11 +61,13 @@ export default function NotesTable(props: {
               hover
               onClick={() => props.onRowClick(note.id)}
               sx={{ cursor: "pointer" }}
-              >
+              > 
+                {/* タイトル Cell */}
                 <TableCell sx={{ maxWidth: 200 }}>
                   <Typography noWrap>{note.title}</Typography>
                 </TableCell>
 
+                {/* 内容 Cell */}
                 <TableCell sx={{ maxWidth: 320 }}>
                   <Typography
                     variant="body2"
@@ -79,10 +81,15 @@ export default function NotesTable(props: {
                     {note.body}
                   </Typography>
                 </TableCell>
-
+                
+                {/* URL Cell */}
                 <TableCell sx={{ maxWidth: 200 }}>
                   {note.url ? (
-                    <a href={note.url} target="_blank" rel="noopener noreferrer">
+                    <a href={note.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => {e.stopPropagation(); }}// ← 行クリック（編集）を止める
+                    >
                       リンク
                     </a>
                   ) : (
@@ -91,11 +98,13 @@ export default function NotesTable(props: {
                     </Typography>
                   )}
                 </TableCell>
-
+                
+                {/* Created At Cell */}
                 <TableCell>
                   <Typography variant="caption">{new Date(note.created_at).toLocaleString()}</Typography>
                 </TableCell>
 
+                {/* Updated At Cell */}
                 <TableCell>
                   <Typography variant="caption">{new Date(note.updated_at).toLocaleString()}</Typography>
                 </TableCell>

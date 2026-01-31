@@ -1,5 +1,10 @@
 "use client";
 
+// HorseMemoApp コンポーネントは、馬のメモ管理アプリケーションの主要な部分を構成します。
+// このコンポーネントは、馬の一覧表示、メモの表示・追加・編集・削除機能を提供します。
+// ユーザーはサイドバーから馬を選択し、その馬に関連するメモを閲覧・管理できます。
+// また、新しい馬の追加やメモのソート機能も備えています。
+
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, CssBaseline, Typography, CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -268,6 +273,7 @@ const handleSubmitHorse = async () => {
 };
 
   const sidebarWidth = 260;
+  // const sidebarWidth = 460;
 
   const showMainLoading =
     (selectedHorseId && horsesLoading) || (selectedHorseId && notesLoading);
